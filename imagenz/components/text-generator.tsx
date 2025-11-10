@@ -4,16 +4,11 @@ import type React from "react"
 import { useState } from "react"
 import { Loader2, Copy, Check, AlertCircle, Sparkles } from "lucide-react"
 
-const TEXT_MODELS = [
-  { name: "deepseek", label: "DeepSeek V3.1", description: "Advanced reasoning" },
-  { name: "gemini", label: "Gemini 2.5 Flash", description: "Multimodal" },
-  { name: "mistral", label: "Mistral Small 3.2", description: "Fast & efficient" },
-  { name: "openai", label: "OpenAI GPT-5 Nano", description: "High quality" },
-]
+const TEXT_MODELS = [{ name: "openai", label: "OpenAI GPT-5 Nano", description: "High quality" }]
 
 export function TextGenerator() {
   const [prompt, setPrompt] = useState("")
-  const [model, setModel] = useState("deepseek")
+  const [model] = useState("openai") // Set to openai by default only
   const [result, setResult] = useState("")
   const [loading, setLoading] = useState(false)
   const [copied, setCopied] = useState(false)
@@ -30,22 +25,31 @@ export function TextGenerator() {
     setResult("")
 
     try {
-      const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=${model}`)
+      const response = await fetch(`https://text.pollinations.ai/${encodeURIComponent(prompt)}?model=${model}`, {
+        method: "GET",
+        headers: {
+          Accept: "text/plain",
+        },
+      })
+
+      if (response.status === 402) {
+        throw new Error("Daily quota exceeded. Please try again later.")
+      }
 
       if (!response.ok) {
-        throw new Error(`API Error: ${response.status}`)
+        throw new Error(`API Error: ${response.status} - ${response.statusText}`)
       }
 
       const text = await response.text()
-      if (!text) {
+      if (!text || text.trim() === "") {
         throw new Error("Empty response from API")
       }
 
       setResult(text)
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
-      setError(`Error generating text: ${errorMessage}`)
-      console.error("Text generation error:", err)
+      setError(`Text generation failed: ${errorMessage}`)
+      console.error("[v0] Text generation error:", err)
     } finally {
       setLoading(false)
     }
@@ -66,27 +70,6 @@ export function TextGenerator() {
 
   return (
     <div className="space-y-6">
-      {/* Model Selection Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        {TEXT_MODELS.map((m) => (
-          <button
-            key={m.name}
-            onClick={() => setModel(m.name)}
-            className={`p-3 rounded-lg transition-all border-2 ${
-              model === m.name
-                ? "border-[#ff0000] bg-[#ff0000]/10 ring-2 ring-[#ff0000]/50"
-                : "border-[#333333] bg-[#1a1a1a] hover:border-[#ff0000]/50"
-            }`}
-            disabled={loading}
-          >
-            <div className="text-left">
-              <p className="font-bold text-[#ffffff] text-xs">{m.label}</p>
-              <p className="text-[#888888] text-[10px] mt-1">{m.description}</p>
-            </div>
-          </button>
-        ))}
-      </div>
-
       {/* Main Grid */}
       <div className="grid lg:grid-cols-2 gap-6">
         {/* Input Section */}
