@@ -1,8 +1,7 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import gsap from "gsap"
-import { AlertCircle, RotateCw } from "lucide-react"
+import { AlertCircle, RotateCw, Sparkles } from "lucide-react"
 
 interface TextFeedItem {
   model: string
@@ -35,24 +34,7 @@ export function LiveTextFeed() {
 
           const data = JSON.parse(event.data)
           setItems((prev) => {
-            const newItems = [data, ...prev].slice(0, 6)
-
-            // Animate new item with stagger
-            setTimeout(() => {
-              const newElement = feedRef.current?.querySelector('[data-new="true"]')
-              if (newElement) {
-                gsap.from(newElement, {
-                  opacity: 0,
-                  x: -40,
-                  duration: 0.6,
-                  ease: "power2.out",
-                })
-                setTimeout(() => {
-                  newElement.removeAttribute("data-new")
-                }, 600)
-              }
-            }, 0)
-
+            const newItems = [data, ...prev].slice(0, 8)
             return newItems
           })
           setLoading(false)
@@ -99,13 +81,13 @@ export function LiveTextFeed() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-96 gap-4 p-8 border-2 border-[#ff4444] bg-[#1a0000]/50 rounded-lg">
-        <AlertCircle className="w-8 h-8 text-[#ff4444]" />
+      <div className="flex flex-col items-center justify-center min-h-96 gap-4 p-8 border-2 border-red-500 bg-red-950/30 rounded-lg">
+        <AlertCircle className="w-8 h-8 text-red-400" />
         <div className="text-center">
-          <p className="text-[#ff4444] mb-4">{error}</p>
+          <p className="text-red-400 mb-4">{error}</p>
           <button
             onClick={handleRetry}
-            className="px-4 py-2 bg-[#ff0000] text-white font-bold rounded-lg hover:bg-[#cc0000] transition-all flex items-center gap-2 mx-auto"
+            className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-all flex items-center gap-2 mx-auto"
           >
             <RotateCw className="w-4 h-4" />
             Retry
@@ -116,19 +98,24 @@ export function LiveTextFeed() {
   }
 
   return (
-    <div ref={feedRef} className="w-full space-y-4">
+    <div ref={feedRef} className="w-full space-y-4 max-h-[600px] overflow-y-auto pr-2">
       {items.map((item, index) => (
         <div
           key={`${item.response}-${index}`}
-          data-new="true"
-          className="group p-6 rounded-lg border-2 border-[#222222] hover:border-[#ff0000]/50 transition-all bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] hover:shadow-lg hover:shadow-[#ff0000]/10 cursor-pointer"
+          className="group p-6 rounded-xl border-2 border-gray-600 hover:border-red-500 transition-all bg-gradient-to-br from-gray-800 to-gray-900 hover:shadow-lg hover:shadow-red-500/20 cursor-pointer"
         >
           <div className="flex items-start justify-between mb-3">
-            <span className="text-xs font-bold text-[#ff0000] bg-[#ff0000]/10 px-2 py-1 rounded">
-              {item.model?.toUpperCase() || "AI"}
-            </span>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-red-500" />
+              <span className="text-xs font-bold text-white bg-red-600 px-3 py-1 rounded-full">
+                {item.model?.toUpperCase() || "AI"}
+              </span>
+            </div>
+            <span className="text-xs text-gray-500">Just now</span>
           </div>
-          <p className="text-[#cccccc] leading-relaxed text-sm line-clamp-4">{item.response}</p>
+          <p className="text-gray-200 leading-relaxed text-base line-clamp-4 group-hover:text-white transition-colors">
+            {item.response}
+          </p>
         </div>
       ))}
 
@@ -137,13 +124,20 @@ export function LiveTextFeed() {
           {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="h-24 bg-gradient-to-r from-[#1a1a1a] to-[#0a0a0a] rounded-lg border-2 border-[#222222] animate-pulse"
+              className="h-32 bg-gradient-to-r from-gray-700 to-gray-800 rounded-xl border-2 border-gray-600 animate-pulse"
               style={{
                 animationDelay: `${i * 0.1}s`,
               }}
             />
           ))}
         </>
+      )}
+      
+      {!loading && items.length === 0 && (
+        <div className="text-center py-12 text-gray-400">
+          <Sparkles className="w-12 h-12 mx-auto mb-4 text-gray-600" />
+          <p>Waiting for new text generations...</p>
+        </div>
       )}
     </div>
   )

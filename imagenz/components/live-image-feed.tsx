@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState, useRef } from "react"
-import gsap from "gsap"
 import { AlertCircle, RotateCw } from "lucide-react"
 
 interface FeedItem {
@@ -37,26 +36,6 @@ export function LiveImageFeed() {
           const data = JSON.parse(event.data)
           setItems((prev) => {
             const newItems = [data, ...prev].slice(0, 12)
-
-            // Animate new item with stagger
-            setTimeout(() => {
-              const newElement = feedRef.current?.querySelector('[data-new="true"]')
-              if (newElement) {
-                gsap.from(newElement, {
-                  opacity: 0,
-                  scale: 0.8,
-                  rotationY: 90,
-                  y: 20,
-                  duration: 0.8,
-                  ease: "back.out",
-                })
-                // Remove the data-new attribute after animation
-                setTimeout(() => {
-                  newElement.removeAttribute("data-new")
-                }, 800)
-              }
-            }, 0)
-
             return newItems
           })
           setLoading(false)
@@ -103,13 +82,13 @@ export function LiveImageFeed() {
 
   if (error) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-96 gap-4 p-8 border-2 border-[#ff4444] bg-[#1a0000]/50 rounded-lg">
-        <AlertCircle className="w-8 h-8 text-[#ff4444]" />
+      <div className="flex flex-col items-center justify-center min-h-96 gap-4 p-8 border-2 border-red-500 bg-red-950/30 rounded-lg">
+        <AlertCircle className="w-8 h-8 text-red-400" />
         <div className="text-center">
-          <p className="text-[#ff4444] mb-4">{error}</p>
+          <p className="text-red-400 mb-4">{error}</p>
           <button
             onClick={handleRetry}
-            className="px-4 py-2 bg-[#ff0000] text-white font-bold rounded-lg hover:bg-[#cc0000] transition-all flex items-center gap-2 mx-auto"
+            className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-all flex items-center gap-2 mx-auto"
           >
             <RotateCw className="w-4 h-4" />
             Retry
@@ -124,11 +103,9 @@ export function LiveImageFeed() {
       {items.map((item, index) => (
         <div
           key={`${item.imageURL}-${index}`}
-          data-new="true"
-          className="group rounded-lg overflow-hidden border-2 border-[#222222] hover:border-[#ff0000]/50 transition-all bg-[#0a0a0a] cursor-pointer"
-          style={{ perspective: "1000px" }}
+          className="group rounded-xl overflow-hidden border-2 border-gray-600 hover:border-red-500 transition-all bg-gray-800 cursor-pointer hover:scale-105 duration-300"
         >
-          <div className="relative aspect-square bg-[#111111] overflow-hidden">
+          <div className="relative aspect-square bg-gray-900 overflow-hidden">
             <img
               src={item.imageURL || "/placeholder.svg"}
               alt={item.prompt}
@@ -137,9 +114,14 @@ export function LiveImageFeed() {
                 e.currentTarget.src = "/abstract-ai-generated-image.jpg"
               }}
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-              <p className="text-white text-sm line-clamp-3">{item.prompt}</p>
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+              <p className="text-white text-sm line-clamp-3 font-medium">{item.prompt}</p>
             </div>
+            {item.model && (
+              <div className="absolute top-2 right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded">
+                {item.model}
+              </div>
+            )}
           </div>
         </div>
       ))}
@@ -149,7 +131,7 @@ export function LiveImageFeed() {
           {[...Array(6)].map((_, i) => (
             <div
               key={i}
-              className="aspect-square bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] rounded-lg border-2 border-[#222222] animate-pulse"
+              className="aspect-square bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl border-2 border-gray-600 animate-pulse"
               style={{
                 animationDelay: `${i * 0.1}s`,
               }}
