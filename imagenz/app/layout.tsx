@@ -3,8 +3,8 @@ import type { Metadata } from "next"
 import "./globals.css"
 
 export const metadata: Metadata = {
-  title: "ImaGenz - Multi-Modal AI Generator",
-  description: "Generate text, audio, and images using AI APIs",
+  title: "ImaGenz",
+  description: "Generate text and images using AI for free no login required",
 }
 
 export default function RootLayout({
