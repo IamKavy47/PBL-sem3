@@ -2,7 +2,7 @@
 
 [![Deploy](https://img.shields.io/badge/Live%20Demo-imagenz.vercel.app-blue?style=for-the-badge&logo=vercel)](https://imagenz.vercel.app)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
-[![Made with ❤️ by Kavy](https://img.shields.io/badge/Made%20with%20❤️%20by-Kavye-orange?style=for-the-badge)](#)
+[![Made with ❤️ by Kavy](https://img.shields.io/badge/Made%20with%20❤️%20by-Kavy-orange?style=for-the-badge)](#)
 
 > **ImaGenz** is a next-gen AI Image Generation Platform powered by advanced diffusion models.  
 > Create, transform, and explore high-quality visuals right from your browser or Android device.
