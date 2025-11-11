@@ -1,7 +1,7 @@
 "use client"
 
 import { useState } from "react"
-import { Loader2, Download, AlertCircle, ImageIcon, Settings2 } from "lucide-react"
+import { Loader2, Download, AlertCircle, ImageIcon, Settings2, ExternalLink } from "lucide-react"
 
 const ASPECT_RATIOS = [
   { label: "16:9", value: "16:9", width: 1024, height: 576 },
@@ -18,10 +18,9 @@ export function ImageGenerator() {
   const [imageUrl, setImageUrl] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [customWidth, setCustomWidth] = useState(1024)
-  const [customHeight, setCustomHeight] = useState(576)
+  const [directUrl, setDirectUrl] = useState("")
 
-  const API_KEY = process.env.NEXT_PUBLIC_POLLINATIONS_API_KEY  // ✅ from .env
+  const API_KEY = process.env.NEXT_PUBLIC_POLLINATIONS_API_KEY
 
   const generateImage = async () => {
     if (!prompt.trim()) {
@@ -32,16 +31,18 @@ export function ImageGenerator() {
     setLoading(true)
     setError("")
     setImageUrl("")
+    setDirectUrl("")
 
     try {
       const selectedRatio = ASPECT_RATIOS.find((r) => r.value === aspectRatio)
-      const width = customWidth || selectedRatio?.width || 1024
-      const height = customHeight || selectedRatio?.height || 768
+      const { width, height } = selectedRatio || { width: 1024, height: 576 }
+
       const encodedPrompt = encodeURIComponent(prompt)
+      const apiUrl = `https://enter.pollinations.ai/api/generate/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=42&enhance=false&negative_prompt=worst+quality%2C+blurry&private=false&nologo=true&nofeed=false&safe=false&quality=medium&transparent=false&guidance_scale=1`
 
-      const url = `https://enter.pollinations.ai/api/generate/image/${encodedPrompt}?model=${model}&width=${width}&height=${height}&seed=42&enhance=false&negative_prompt=worst+quality%2C+blurry&private=false&nologo=true&nofeed=false&safe=false&quality=medium&transparent=false&guidance_scale=1`
+      setDirectUrl(apiUrl)
 
-      const res = await fetch(url, {
+      const res = await fetch(apiUrl, {
         headers: {
           Authorization: `Bearer ${API_KEY}`,
         },
@@ -94,7 +95,7 @@ export function ImageGenerator() {
 
   return (
     <div className="space-y-6">
-      {/* Model and Settings Grid */}
+      {/* Model and Aspect Ratio Selectors */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-[#cccccc] font-bold mb-2 text-xs">MODEL</label>
@@ -127,70 +128,44 @@ export function ImageGenerator() {
         </div>
       </div>
 
-      {/* Custom Resolution Inputs */}
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="block text-[#cccccc] font-bold mb-2 text-xs">CUSTOM WIDTH (px)</label>
-          <input
-            type="number"
-            value={customWidth}
-            onChange={(e) => setCustomWidth(Number(e.target.value))}
-            disabled={loading}
-            className="w-full p-3 bg-[#1a1a1a] border-2 border-[#333333] text-white rounded-lg focus:border-[#ff0000] focus:ring-2 focus:ring-[#ff0000]/20"
-          />
-        </div>
-        <div>
-          <label className="block text-[#cccccc] font-bold mb-2 text-xs">CUSTOM HEIGHT (px)</label>
-          <input
-            type="number"
-            value={customHeight}
-            onChange={(e) => setCustomHeight(Number(e.target.value))}
-            disabled={loading}
-            className="w-full p-3 bg-[#1a1a1a] border-2 border-[#333333] text-white rounded-lg focus:border-[#ff0000] focus:ring-2 focus:ring-[#ff0000]/20"
-          />
-        </div>
-      </div>
-
-      {/* Prompt + Generate Button */}
+      {/* Prompt Input and Generate Button */}
       <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] p-8 border-2 border-[#222222] hover:border-[#333333] transition-all rounded-lg">
         <div className="flex items-center gap-2 mb-6">
           <Settings2 className="w-5 h-5 text-[#ff0000]" />
           <h2 className="text-2xl font-bold text-white">SETTINGS</h2>
         </div>
 
-        <div className="space-y-4">
-          {error && (
-            <div className="p-3 border-2 border-[#ff4444] bg-[#1a0000]/50 rounded-lg flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-[#ff4444]" />
-              <p className="text-[#ff4444] text-sm">{error}</p>
-            </div>
+        {error && (
+          <div className="p-3 border-2 border-[#ff4444] bg-[#1a0000]/50 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-[#ff4444]" />
+            <p className="text-[#ff4444] text-sm">{error}</p>
+          </div>
+        )}
+
+        <label className="block text-[#cccccc] font-bold mb-3 text-xs">IMAGE PROMPT</label>
+        <textarea
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Describe your vision..."
+          className="w-full min-h-40 p-4 bg-[#0a0a0a] border-2 border-[#333333] text-white placeholder-[#555555] focus:outline-none focus:border-[#ff0000] focus:ring-2 focus:ring-[#ff0000]/20 rounded-lg resize-none"
+          disabled={loading}
+        />
+
+        <button
+          onClick={generateImage}
+          disabled={loading || !prompt.trim()}
+          className="w-full mt-4 py-4 bg-gradient-to-r from-[#ff0000] to-[#cc0000] text-white font-bold border-2 border-[#ff0000] hover:shadow-lg hover:shadow-[#ff0000]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg active:scale-95"
+        >
+          {loading ? (
+            <span className="flex items-center justify-center gap-2">
+              <Loader2 className="w-5 h-5 animate-spin" />
+              GENERATING...
+            </span>
+          ) : (
+            "GENERATE IMAGE"
           )}
-
-          <label className="block text-[#cccccc] font-bold mb-3 text-xs">IMAGE PROMPT</label>
-          <textarea
-            value={prompt}
-            onChange={(e) => setPrompt(e.target.value)}
-            onKeyPress={handleKeyPress}
-            placeholder="Describe your vision..."
-            className="w-full min-h-40 p-4 bg-[#0a0a0a] border-2 border-[#333333] text-white placeholder-[#555555] focus:outline-none focus:border-[#ff0000] focus:ring-2 focus:ring-[#ff0000]/20 rounded-lg resize-none"
-            disabled={loading}
-          />
-
-          <button
-            onClick={generateImage}
-            disabled={loading || !prompt.trim()}
-            className="w-full py-4 bg-gradient-to-r from-[#ff0000] to-[#cc0000] text-white font-bold border-2 border-[#ff0000] hover:shadow-lg hover:shadow-[#ff0000]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg active:scale-95"
-          >
-            {loading ? (
-              <span className="flex items-center justify-center gap-2">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                GENERATING...
-              </span>
-            ) : (
-              "GENERATE IMAGE"
-            )}
-          </button>
-        </div>
+        </button>
       </div>
 
       {/* Output Section */}
@@ -201,7 +176,10 @@ export function ImageGenerator() {
         </div>
 
         {loading && (
-          <div className="w-full bg-[#0a0a0a] border-2 border-dashed border-[#333333] flex flex-col items-center justify-center gap-3 rounded-lg" style={{ aspectRatio: selectedRatio?.value }}>
+          <div
+            className="w-full bg-[#0a0a0a] border-2 border-dashed border-[#333333] flex flex-col items-center justify-center gap-3 rounded-lg"
+            style={{ aspectRatio: selectedRatio?.value }}
+          >
             <Loader2 className="w-8 h-8 animate-spin text-[#ff0000]" />
             <p className="text-[#888888] text-sm">Generating image...</p>
           </div>
@@ -209,7 +187,10 @@ export function ImageGenerator() {
 
         {imageUrl && !loading && (
           <div className="space-y-4">
-            <div className="relative w-full bg-[#0a0a0a] border-2 border-[#333333] overflow-hidden rounded-lg" style={{ aspectRatio: selectedRatio?.value }}>
+            <div
+              className="relative w-full bg-[#0a0a0a] border-2 border-[#333333] overflow-hidden rounded-lg"
+              style={{ aspectRatio: selectedRatio?.value }}
+            >
               <img
                 src={imageUrl}
                 alt="Generated image"
@@ -218,13 +199,25 @@ export function ImageGenerator() {
                 crossOrigin="anonymous"
               />
             </div>
-            <button
-              onClick={downloadImage}
-              className="w-full py-3 bg-[#1a1a1a] border-2 border-[#333333] text-[#cccccc] font-bold hover:border-[#ff0000] hover:text-[#ff0000] transition-all rounded-lg flex items-center justify-center gap-2 active:scale-95"
-            >
-              <Download className="w-4 h-4" />
-              DOWNLOAD
-            </button>
+
+            <div className="flex gap-3">
+              <button
+                onClick={downloadImage}
+                className="flex-1 py-3 bg-[#1a1a1a] border-2 border-[#333333] text-[#cccccc] font-bold hover:border-[#ff0000] hover:text-[#ff0000] transition-all rounded-lg flex items-center justify-center gap-2 active:scale-95"
+              >
+                <Download className="w-4 h-4" />
+                DOWNLOAD
+              </button>
+
+              <button
+                onClick={() => directUrl && window.open(directUrl, "_blank")}
+                disabled={!directUrl}
+                className="flex-1 py-3 bg-[#1a1a1a] border-2 border-[#333333] text-[#cccccc] font-bold hover:border-[#ff0000] hover:text-[#ff0000] transition-all rounded-lg flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+              >
+                <ExternalLink className="w-4 h-4" />
+                VIEW FULL IMAGE
+              </button>
+            </div>
           </div>
         )}
       </div>
