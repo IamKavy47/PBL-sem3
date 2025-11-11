@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
-import { Loader2, Download, AlertCircle, ImageIcon, Settings2 } from "lucide-react"
+import { Loader2, Download, AlertCircle, ImageIcon, Settings2, ExternalLink } from "lucide-react"
 
 const ASPECT_RATIOS = [
   { label: "16:9", value: "16:9", width: 1024, height: 576 },
@@ -19,6 +19,7 @@ export function ImageGenerator() {
   const [imageUrl, setImageUrl] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [fullImageUrl, setFullImageUrl] = useState("")
 
   const generateImage = async () => {
     if (!prompt.trim()) {
@@ -29,18 +30,29 @@ export function ImageGenerator() {
     setLoading(true)
     setError("")
     setImageUrl("")
+    setFullImageUrl("")
 
     try {
       const selectedRatio = ASPECT_RATIOS.find((r) => r.value === aspectRatio)
       const encodedPrompt = encodeURIComponent(prompt)
       const url = `https://image.pollinations.ai/prompt/${encodedPrompt}?model=${model}&width=${selectedRatio?.width}&height=${selectedRatio?.height}&nologo=true`
 
-      setImageUrl(url)
+      setFullImageUrl(url)
+      // Preload image for smooth transition
+      const img = new Image()
+      img.src = url
+      img.onload = () => {
+        setImageUrl(url)
+        setLoading(false)
+      }
+      img.onerror = () => {
+        setError("Failed to load image. Please try again.")
+        setLoading(false)
+      }
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : "Unknown error occurred"
       setError(`Error generating image: ${errorMessage}`)
       console.error("Image generation error:", err)
-    } finally {
       setLoading(false)
     }
   }
@@ -66,10 +78,6 @@ export function ImageGenerator() {
     }
   }
 
-  const handleImageError = () => {
-    setError("Failed to load image. Please try again.")
-  }
-
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && e.ctrlKey) {
       e.preventDefault()
@@ -81,7 +89,7 @@ export function ImageGenerator() {
 
   return (
     <div className="space-y-6">
-      {/* Model and Settings Grid */}
+      {/* Model and Aspect Ratio Selectors */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="block text-[#cccccc] font-bold mb-2 text-xs">MODEL</label>
@@ -114,125 +122,129 @@ export function ImageGenerator() {
         </div>
       </div>
 
-      {/* Main Grid */}
+      {/* Input Section */}
       <div className="grid lg:grid-cols-2 gap-6">
-        {/* Input Section */}
         <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] p-8 border-2 border-[#222222] hover:border-[#333333] transition-all rounded-lg">
           <div className="flex items-center gap-2 mb-6">
             <Settings2 className="w-5 h-5 text-[#ff0000]" />
-            <h2 className="text-2xl font-bold text-white" style={{ fontFamily: "HelveticaNowDisplay-ExtBlk" }}>
-              SETTINGS
-            </h2>
+            <h2 className="text-2xl font-bold text-white">SETTINGS</h2>
           </div>
-          <div className="space-y-4">
-            {error && (
-              <div className="p-3 border-2 border-[#ff4444] bg-[#1a0000]/50 rounded-lg flex items-start gap-3 animate-in fade-in">
-                <AlertCircle className="w-5 h-5 text-[#ff4444] flex-shrink-0 mt-0.5" />
-                <p className="text-[#ff4444] text-sm">{error}</p>
-              </div>
+
+          {error && (
+            <div className="p-3 border-2 border-[#ff4444] bg-[#1a0000]/50 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-[#ff4444]" />
+              <p className="text-[#ff4444] text-sm">{error}</p>
+            </div>
+          )}
+
+          <div>
+            <p className="text-[#cccccc] font-bold mb-3 text-xs">SELECTED RATIO: {aspectRatio}</p>
+            <div className="p-3 bg-[#0a0a0a] border-2 border-[#333333] rounded-lg text-center">
+              <p className="text-[#888888] text-xs">
+                {selectedRatio?.width} × {selectedRatio?.height} px
+              </p>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[#cccccc] font-bold mb-3 text-xs mt-4">IMAGE PROMPT</label>
+            <textarea
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Describe your vision..."
+              className="w-full min-h-40 p-4 bg-[#0a0a0a] border-2 border-[#333333] text-white placeholder-[#555555] focus:outline-none focus:border-[#ff0000] focus:ring-2 focus:ring-[#ff0000]/20 rounded-lg resize-none"
+              disabled={loading}
+              style={{ fontFamily: "VCR-Mono" }}
+            />
+          </div>
+
+          <button
+            onClick={generateImage}
+            disabled={loading || !prompt.trim()}
+            className="w-full mt-4 py-4 bg-gradient-to-r from-[#ff0000] to-[#cc0000] text-white font-bold border-2 border-[#ff0000] hover:shadow-lg hover:shadow-[#ff0000]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg active:scale-95"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                GENERATING...
+              </span>
+            ) : (
+              "GENERATE IMAGE"
             )}
-
-            <div>
-              <p className="text-[#cccccc] font-bold mb-3 text-xs">SELECTED RATIO: {aspectRatio}</p>
-              <div className="p-3 bg-[#0a0a0a] border-2 border-[#333333] rounded-lg text-center">
-                <p className="text-[#888888] text-xs">
-                  {selectedRatio?.width} × {selectedRatio?.height} px
-                </p>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-[#cccccc] font-bold mb-3 text-xs">IMAGE PROMPT</label>
-              <textarea
-                value={prompt}
-                onChange={(e) => setPrompt(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Describe your vision..."
-                className="w-full min-h-40 p-4 bg-[#0a0a0a] border-2 border-[#333333] text-white placeholder-[#555555] focus:outline-none focus:border-[#ff0000] focus:ring-2 focus:ring-[#ff0000]/20 rounded-lg transition-all resize-none"
-                disabled={loading}
-                style={{ fontFamily: "VCR-Mono" }}
-              />
-            </div>
-            <button
-              onClick={generateImage}
-              disabled={loading || !prompt.trim()}
-              className="w-full py-4 bg-gradient-to-r from-[#ff0000] to-[#cc0000] text-white font-bold border-2 border-[#ff0000] hover:shadow-lg hover:shadow-[#ff0000]/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all rounded-lg active:scale-95"
-              style={{ fontFamily: "HelveticaNowDisplay-ExtBlk" }}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <Loader2 className="w-5 h-5 animate-spin" />
-                  GENERATING...
-                </span>
-              ) : (
-                "GENERATE IMAGE"
-              )}
-            </button>
-          </div>
+          </button>
         </div>
 
         {/* Output Section */}
         <div className="bg-gradient-to-br from-[#1a1a1a] to-[#0a0a0a] p-8 border-2 border-[#222222] hover:border-[#333333] transition-all rounded-lg">
           <div className="flex items-center gap-2 mb-6">
             <ImageIcon className="w-5 h-5 text-[#ff0000]" />
-            <h2 className="text-2xl font-bold text-white" style={{ fontFamily: "HelveticaNowDisplay-ExtBlk" }}>
-              PREVIEW
-            </h2>
+            <h2 className="text-2xl font-bold text-white">PREVIEW</h2>
           </div>
 
-          <div className="space-y-4">
-            {loading && (
+          {/* Loading Skeleton */}
+          {loading && (
+            <div
+              className="w-full border-2 border-[#333333] bg-gradient-to-r from-[#0a0a0a] via-[#111111] to-[#0a0a0a] bg-[length:200%_100%] animate-[shimmer_2s_infinite] rounded-lg"
+              style={{
+                aspectRatio: selectedRatio?.value,
+                backgroundImage:
+                  "linear-gradient(90deg, #0a0a0a 25%, #111111 50%, #0a0a0a 75%)",
+              }}
+            />
+          )}
+
+          {!loading && imageUrl && !error && (
+            <div className="space-y-4">
               <div
-                className="w-full bg-[#0a0a0a] border-2 border-dashed border-[#333333] flex flex-col items-center justify-center gap-3 rounded-lg"
+                className="relative w-full bg-[#0a0a0a] border-2 border-[#333333] overflow-hidden rounded-lg"
                 style={{ aspectRatio: selectedRatio?.value }}
               >
-                <Loader2 className="w-8 h-8 animate-spin text-[#ff0000]" />
-                <p className="text-[#888888] text-sm">Generating image...</p>
+                <img
+                  src={imageUrl}
+                  alt="Generated image"
+                  className="w-full h-full object-cover transition-opacity duration-500 opacity-100"
+                  crossOrigin="anonymous"
+                />
               </div>
-            )}
 
-            {error && !loading && (
-              <div className="p-4 border-2 border-[#ff4444] bg-[#1a0000]/50 rounded-lg flex items-start gap-3">
-                <AlertCircle className="w-5 h-5 text-[#ff4444] mt-0.5 flex-shrink-0" />
-                <p className="text-[#ff4444] text-sm">{error}</p>
-              </div>
-            )}
-
-            {imageUrl && !loading && !error && (
-              <div className="space-y-4">
-                <div
-                  className="relative w-full bg-[#0a0a0a] border-2 border-[#333333] overflow-hidden rounded-lg"
-                  style={{ aspectRatio: selectedRatio?.value }}
-                >
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={imageUrl || "/placeholder.svg"}
-                    alt="Generated image"
-                    className="w-full h-full object-cover"
-                    onError={handleImageError}
-                    crossOrigin="anonymous"
-                  />
-                </div>
+              <div className="flex gap-3">
                 <button
                   onClick={downloadImage}
-                  className="w-full py-3 bg-[#1a1a1a] border-2 border-[#333333] text-[#cccccc] font-bold hover:border-[#ff0000] hover:text-[#ff0000] transition-all rounded-lg flex items-center justify-center gap-2 active:scale-95"
+                  className="flex-1 py-3 bg-[#1a1a1a] border-2 border-[#333333] text-[#cccccc] font-bold hover:border-[#ff0000] hover:text-[#ff0000] transition-all rounded-lg flex items-center justify-center gap-2 active:scale-95"
                 >
                   <Download className="w-4 h-4" />
                   DOWNLOAD
                 </button>
-              </div>
-            )}
 
-            {!imageUrl && !loading && !error && (
-              <div
-                className="w-full bg-[#0a0a0a] border-2 border-dashed border-[#333333] flex flex-col items-center justify-center gap-3 rounded-lg text-[#888888]"
-                style={{ aspectRatio: selectedRatio?.value }}
-              >
-                <ImageIcon className="w-8 h-8 opacity-50" />
-                <p className="text-center text-sm">Generated images appear here</p>
+                <button
+                  onClick={() => fullImageUrl && window.open(fullImageUrl, "_blank")}
+                  disabled={!fullImageUrl}
+                  className="flex-1 py-3 bg-[#1a1a1a] border-2 border-[#333333] text-[#cccccc] font-bold hover:border-[#ff0000] hover:text-[#ff0000] transition-all rounded-lg flex items-center justify-center gap-2 active:scale-95 disabled:opacity-50"
+                >
+                  <ExternalLink className="w-4 h-4" />
+                  VIEW FULL IMAGE
+                </button>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {!loading && !imageUrl && !error && (
+            <div
+              className="w-full bg-[#0a0a0a] border-2 border-dashed border-[#333333] flex flex-col items-center justify-center gap-3 rounded-lg text-[#888888]"
+              style={{ aspectRatio: selectedRatio?.value }}
+            >
+              <ImageIcon className="w-8 h-8 opacity-50" />
+              <p className="text-center text-sm">Generated images appear here</p>
+            </div>
+          )}
+
+          {error && !loading && (
+            <div className="p-4 border-2 border-[#ff4444] bg-[#1a0000]/50 rounded-lg flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-[#ff4444]" />
+              <p className="text-[#ff4444] text-sm">{error}</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
